@@ -19,6 +19,17 @@ let notes = [
   },
 ];
 
+const requestLogger = (req, res, next) => {
+  console.log("Method:", req.method);
+  console.log("Path:  ", req.path);
+  console.log("Body:  ", req.body);
+  console.log("---");
+  next();
+};
+
+app.use(express.json());
+app.use(requestLogger);
+
 app.get("/", (req, res) => {
   res.send("<h1>Hello World</h1>");
 });
@@ -42,6 +53,34 @@ app.delete("/notes/:id", (req, res) => {
   notes = notes.filter((note) => note.id !== id);
   res.sendStatus(204);
 });
+
+const generateId = () => {
+  const maxId =
+    notes.length > 0 ? Math.max(...notes.map((n) => Number(n.id))) : 0;
+  return String(maxId + 1);
+};
+
+app.post("/notes", (req, res) => {
+  const body = req.body;
+  if (!body.content) {
+    return res.status(400).json({ error: "content missing" });
+  }
+
+  const note = {
+    content: body.content,
+    important: body.important || false,
+    id: generateId(),
+  };
+
+  notes = notes.concat(note);
+  res.json(note);
+});
+
+const unknownEndpoint = (req, res) => {
+  res.status(404).json({ error: "unknown endpoint" });
+};
+
+app.use(unknownEndpoint);
 
 const PORT = 3001;
 app.listen(PORT, () => console.log(`server listening on port ${PORT}`));
